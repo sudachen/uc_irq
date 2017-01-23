@@ -10,7 +10,11 @@
 #pragma once
 #include <uccm/board.h>
 
-#pragma uccm require(end) += [@inc]/~sudachen/uc_irq/uc_irq.c
+#ifdef __nRF5x_UC__
+#include <app_util_platform.h>
+#endif
+
+#pragma uccm require(source) += [@inc]/~sudachen/uc_irq/uc_irq.c
 
 typedef enum UcIrqPriority UcIrqPriority;
 
@@ -47,3 +51,15 @@ extern UcIrqHandler *UC_vIRQ_1ms; // virtual IRQ signalled every 1ms
 
 void ucRegister_1msHandler(UcIrqHandler *irq);
 void ucUnregister_1msHandler(UcIrqHandler *irq);
+
+#if __CORTEX_M >= 3
+UcIrqPriority ucSet_IrqLevel(UcIrqPriority irqLevel);
+#endif
+
+void ucEnable_AppIrq(bool nested);
+bool ucDisable_AppIrq(void); // return true if call is nested
+
+#define __Critical \
+    switch (0) for ( bool uc_irq$nested; 0; ucEnable_AppIrq(uc_irq$nested) ) \
+        if(1) { case 0: uc_irq$nested = ucDisable_AppIrq(); goto C_LOCAL_ID(doIt); } \
+        else C_LOCAL_ID(doIt):
