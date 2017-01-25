@@ -103,7 +103,8 @@ void uc_irq$stopRTC1()
 #ifdef __stm32Fx_UC__
 // it uses raw SysTick_Handler in HAL
 void ucSysTick1ms()
-    ucHandle_IRQ(UC_TIMED_IRQ)
+{
+    ucHandle_IRQ(UC_TIMED_IRQ);
 }
 #endif
 
@@ -147,7 +148,7 @@ void ucUnregister_1msHandler(UcIrqHandler *irq)
 }
 
 #if __CORTEX_M >= 3 // CMSIS
-bool ucIs_IrqLevelLowerThen(UcIrqPriority irqLevel)
+bool ucIs_IrqLevelLower(UcIrqPriority irqLevel)
 {
     uint32_t oldPrio;
     uint32_t realPrio = uc_irq$prio(irqLevel) << 4;
@@ -172,7 +173,7 @@ bool ucDisable_AppIrq()
     __Assert_Nrf_Success sd_nvic_critical_region_enter(&nestedCriticalReqion);
     return nestedCriticalReqion;
 #elif __CORTEX_M >= 3 // CMSIS
-    if ( ucIs_IrqLevelLowerThan(UC_HIGH_PRIORITY_IRQ))
+    if ( ucIs_IrqLevelLower(UC_HIGH_PRIORITY_IRQ))
     {
         ucSet_IrqLevel(UC_HIGH_PRIORITY_IRQ);
         return false;
