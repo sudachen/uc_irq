@@ -12,6 +12,8 @@
 
 #ifdef __nRF5x_UC__
 #include <app_util_platform.h>
+#include <app_timer.h>
+#define APP_TIMER_PRESCALER 32
 #endif
 
 #pragma uccm require(source) += [@inc]/~sudachen/uc_irq/uc_irq.c
@@ -20,7 +22,7 @@ typedef enum UcIrqPriority UcIrqPriority;
 
 enum UcIrqPriority
 {
-    UC_HIGH_PRIORITY_IRQ = 0,
+    UC_HIGH_PRIORITY_IRQ = 1,
     UC_TIMER_PRIORITY_IRQ,
     UC_LOW_PRIORITY_IRQ,
     UC_APP_PRIORITY_IRQ,

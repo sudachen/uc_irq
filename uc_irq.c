@@ -22,8 +22,8 @@ bool uc_irq$rtcIsStarted = false;
 
 void RTC1_IRQHandler(void)
 {
-    ucToggle_BoardLED(1);
     NRF_RTC1->EVENTS_TICK = 0;
+    NRF_RTC1->EVENTS_OVRFLW = 0;
     ucHandle_IRQ(UC_TIMED_IRQ);
     //__SEV();
 }
@@ -53,9 +53,8 @@ __Forceinline int uc_irq$prio(UcIrqPriority prio)
 
 void ucEnable_Irq(UcIrqNo irqNo,UcIrqPriority prio)
 {
-    uint32_t err;
     int realPrio = uc_irq$prio(prio);
-    __Assert(prio >= UC_HIGH_PRIORITY_IRQ && prio <= UC_APP_PRIORITY_IRQ );
+    __Assert(prio >= UC_HIGH_PRIORITY_IRQ && prio <= UC_APP_PRIORITY_IRQ);
 
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
     __Assert_Nrf_Success sd_nvic_SetPriority(irqNo,realPrio);
@@ -82,7 +81,7 @@ void uc_irq$startRTC1()
 {
     if ( uc_irq$rtcIsStarted ) return;
 
-    NRF_RTC1->PRESCALER = 32;
+    NRF_RTC1->PRESCALER = APP_TIMER_PRESCALER;
     NRF_RTC1->INTENSET = RTC_INTENSET_TICK_Msk;
     NRF_RTC1->EVTENSET = RTC_EVTENSET_TICK_Msk;
     NRF_RTC1->TASKS_CLEAR = 1;
@@ -98,6 +97,7 @@ void uc_irq$stopRTC1()
     ucDisable_Irq(RTC1_IRQn);
     uc_irq$rtcIsStarted = false;
 }
+
 #endif
 
 #ifdef __stm32Fx_UC__
