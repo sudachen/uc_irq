@@ -1,5 +1,6 @@
 
 #include <~sudachen/uc_irq/import.h>
+#include <nrf_delay.h>
 
 const UcIrqHandler uc_irq$Nil = { NULL, NULL };
 
@@ -86,6 +87,7 @@ void uc_irq$startRTC1()
     NRF_RTC1->EVTENSET = RTC_EVTENSET_TICK_Msk;
     NRF_RTC1->TASKS_CLEAR = 1;
     NRF_RTC1->TASKS_START = 1;
+    nrf_delay_us(47);
 
     ucEnable_Irq(RTC1_IRQn,UC_HIGH_PRIORITY_IRQ);
     uc_irq$rtcIsStarted = true;
@@ -93,7 +95,11 @@ void uc_irq$startRTC1()
 
 void uc_irq$stopRTC1()
 {
+    NRF_RTC1->INTENCLR = RTC_INTENSET_TICK_Msk;
+    NRF_RTC1->EVTENCLR = RTC_EVTENSET_TICK_Msk;
     NRF_RTC1->TASKS_STOP = 1;
+    nrf_delay_us(47);
+    NRF_RTC1->TASKS_CLEAR = 1;
     ucDisable_Irq(RTC1_IRQn);
     uc_irq$rtcIsStarted = false;
 }
