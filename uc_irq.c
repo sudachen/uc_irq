@@ -4,7 +4,7 @@
 
 const UcIrqHandler uc_irq$Nil = { NULL, NULL };
 
-void ucHandle_IRQ(UcIrqHandler *irqList)
+void handle_irq(UcIrqHandler *irqList)
 {
     UcIrqHandler *irqPtr = irqList;
     while (irqPtr != UC_IRQ_LIST_NIL)
@@ -25,7 +25,7 @@ void RTC1_IRQHandler(void)
 {
     NRF_RTC1->EVENTS_TICK = 0;
     NRF_RTC1->EVENTS_OVRFLW = 0;
-    ucHandle_IRQ(UC_TIMED_IRQ);
+    handle_irq(UC_TIMED_IRQ);
     //__SEV();
 }
 
@@ -52,7 +52,7 @@ __Forceinline int uc_irq$prio(UcIrqPriority prio)
 #endif
 }
 
-void ucEnable_Irq(UcIrqNo irqNo,UcIrqPriority prio)
+void enable_irq(UcIrqNo irqNo,UcIrqPriority prio)
 {
     int realPrio = uc_irq$prio(prio);
     __Assert(prio >= UC_HIGH_PRIORITY_IRQ && prio <= UC_APP_PRIORITY_IRQ);
@@ -68,7 +68,7 @@ void ucEnable_Irq(UcIrqNo irqNo,UcIrqPriority prio)
 #endif
 }
 
-void ucDisable_Irq(UcIrqNo irqNo)
+void disable_irq(UcIrqNo irqNo)
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
     __Assert_Nrf_Success sd_nvic_DisableIRQ(irqNo);
@@ -89,7 +89,7 @@ void uc_irq$startRTC1()
     NRF_RTC1->TASKS_START = 1;
     nrf_delay_us(47);
 
-    ucEnable_Irq(RTC1_IRQn,UC_HIGH_PRIORITY_IRQ);
+    enable_irq(RTC1_IRQn,UC_HIGH_PRIORITY_IRQ);
     uc_irq$rtcIsStarted = true;
 }
 
@@ -100,7 +100,7 @@ void uc_irq$stopRTC1()
     NRF_RTC1->TASKS_STOP = 1;
     nrf_delay_us(47);
     NRF_RTC1->TASKS_CLEAR = 1;
-    ucDisable_Irq(RTC1_IRQn);
+    disable_irq(RTC1_IRQn);
     uc_irq$rtcIsStarted = false;
 }
 
@@ -108,20 +108,20 @@ void uc_irq$stopRTC1()
 
 #ifdef __stm32Fx_UC__
 // it uses raw SysTick_Handler in HAL
-void ucSysTick1ms()
+void on_sysTick1ms()
 {
-    ucHandle_IRQ(UC_TIMED_IRQ);
+    handle_irq(UC_TIMED_IRQ);
 }
 #endif
 
-void ucRegister_IrqHandler(UcIrqHandler *irq, UcIrqHandler **irqList)
+void register_irqHandler(UcIrqHandler *irq, UcIrqHandler **irqList)
 {
     if ( irq->next != NULL ) return;
     irq->next = *irqList;
     *irqList = irq;
 }
 
-void ucUnregister_IrqHandler(UcIrqHandler *irq, UcIrqHandler **irqList)
+void unregister_irqHandler(UcIrqHandler *irq, UcIrqHandler **irqList)
 {
     UcIrqHandler **ptr = irqList;
     if ( irq->next == NULL ) return;
@@ -135,18 +135,18 @@ void ucUnregister_IrqHandler(UcIrqHandler *irq, UcIrqHandler **irqList)
     }
 }
 
-void ucRegister_1msHandler(UcIrqHandler *irq)
+void register_1msHandler(UcIrqHandler *irq)
 {
-    ucRegister_IrqHandler(irq, &UC_vIRQ_1ms);
+    register_irqHandler(irq, &UC_vIRQ_1ms);
 #ifdef __nRF5x_UC__
     if ( UC_vIRQ_1ms != UC_IRQ_LIST_NIL && !uc_irq$rtcIsStarted )
         uc_irq$startRTC1();
 #endif
 }
 
-void ucUnregister_1msHandler(UcIrqHandler *irq)
+void unregister_1msHandler(UcIrqHandler *irq)
 {
-    ucUnregister_IrqHandler(irq, &UC_vIRQ_1ms);
+    unregister_irqHandler(irq, &UC_vIRQ_1ms);
 #ifdef __nRF5x_UC__
     if ( UC_vIRQ_1ms == UC_IRQ_LIST_NIL && uc_irq$rtcIsStarted )
         uc_irq$stopRTC1();
@@ -154,7 +154,7 @@ void ucUnregister_1msHandler(UcIrqHandler *irq)
 }
 
 #if __CORTEX_M >= 3 // CMSIS
-bool ucIs_IrqLevelLower(UcIrqPriority irqLevel)
+bool is_irqLevelLower(UcIrqPriority irqLevel)
 {
     uint32_t oldPrio;
     uint32_t realPrio = uc_irq$prio(irqLevel) << 4;
@@ -162,7 +162,7 @@ bool ucIs_IrqLevelLower(UcIrqPriority irqLevel)
     return oldPrio < realPrio;
 }
 
-UcIrqPriority ucSet_IrqLevel(UcIrqPriority irqLevel)
+UcIrqPriority set_irqLevel(UcIrqPriority irqLevel)
 {
     uint32_t oldPrio;
     uint32_t realPrio = uc_irq$prio(irqLevel) << 4;
@@ -172,16 +172,16 @@ UcIrqPriority ucSet_IrqLevel(UcIrqPriority irqLevel)
 }
 #endif
 
-bool ucDisable_AppIrq()
+bool disable_appIrq()
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
     uint8_t nestedCriticalReqion = 0;
     __Assert_Nrf_Success sd_nvic_critical_region_enter(&nestedCriticalReqion);
     return nestedCriticalReqion;
 #elif __CORTEX_M >= 3 // CMSIS
-    if ( ucIs_IrqLevelLower(UC_HIGH_PRIORITY_IRQ))
+    if ( is_irqLevelLower(UC_HIGH_PRIORITY_IRQ))
     {
-        ucSet_IrqLevel(UC_HIGH_PRIORITY_IRQ);
+        set_irqLevel(UC_HIGH_PRIORITY_IRQ);
         return false;
     }
     return true;
@@ -199,12 +199,12 @@ bool ucDisable_AppIrq()
 #endif
 }
 
-void ucEnable_AppIrq(bool nested)
+void enable_appIrq(bool nested)
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
     __Assert_Nrf_Success sd_nvic_critical_region_exit(nested);
 #elif __CORTEX_M >= 3 // CMSIS
-    if ( !nested ) ucSet_IrqLevel(UC_APP_PRIORITY_IRQ);
+    if ( !nested ) set_irqLevel(UC_APP_PRIORITY_IRQ);
 #else
     if ( !netsed ) __enable_irq();
 #endif

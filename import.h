@@ -44,24 +44,24 @@ struct UcIrqHandler
 extern const UcIrqHandler uc_irq$Nil; // place it into ROM
 #define UC_IRQ_LIST_NIL ((UcIrqHandler*)&uc_irq$Nil) // Yep, I know what I do
 
-void ucRegister_IrqHandler(UcIrqHandler *irq, UcIrqHandler **irqList);
-void ucUnregister_IrqHandler(UcIrqHandler *irq, UcIrqHandler **irqList);
-void ucHandle_IRQ(UcIrqHandler *irqList);
+void register_irqHandler(struct UcIrqHandler *irq, UcIrqHandler **irqList);
+void unregister_irqHandler(struct UcIrqHandler *irq, UcIrqHandler **irqList);
+void handle_irq(struct UcIrqHandler *irqList);
 
 extern UcIrqHandler *UC_vIRQ_1ms; // virtual IRQ signalled every 1ms
 #define UC_TIMED_IRQ UC_vIRQ_1ms
 
-void ucRegister_1msHandler(UcIrqHandler *irq);
-void ucUnregister_1msHandler(UcIrqHandler *irq);
+void register_1msHandler(struct UcIrqHandler *irq);
+void unregister_1msHandler(struct UcIrqHandler *irq);
 
 #if __CORTEX_M >= 3
-UcIrqPriority ucSet_IrqLevel(UcIrqPriority irqLevel);
+UcIrqPriority set_irqLevel(UcIrqPriority irqLevel);
 #endif
 
-void ucEnable_AppIrq(bool nested);
-bool ucDisable_AppIrq(void); // return true if call is nested
+void enable_appIrq(bool nested);
+bool disable_appIrq(void); // return true if call is nested
 
 #define __Critical \
-    switch (0) for ( bool uc_irq$nested; 0; ucEnable_AppIrq(uc_irq$nested) ) \
-        if(1) { case 0: uc_irq$nested = ucDisable_AppIrq(); goto C_LOCAL_ID(doIt); } \
+    switch (0) for ( bool uc_irq$nested; 0; enable_appIrq(uc_irq$nested) ) \
+        if(1) { case 0: uc_irq$nested = disable_appIrq(); goto C_LOCAL_ID(doIt); } \
         else C_LOCAL_ID(doIt):
