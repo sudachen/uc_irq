@@ -1,6 +1,9 @@
 
 #include <~sudachen/uc_irq/import.h>
+
+#ifdef __nRF5x_UC__
 #include <nrf_delay.h>
+#endif
 
 const UcIrqHandler uc_irq$Nil = { NULL, NULL };
 
@@ -58,9 +61,9 @@ void enable_irq(UcIrqNo irqNo,UcIrqPriority prio)
     __Assert(prio >= UC_HIGH_PRIORITY_IRQ && prio <= UC_APP_PRIORITY_IRQ);
 
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
-    __Assert_Nrf_Success sd_nvic_SetPriority(irqNo,realPrio);
-    __Assert_Nrf_Success sd_nvic_ClearPendingIRQ(irqNo);
-    __Assert_Nrf_Success sd_nvic_EnableIRQ(irqNo);
+    __Assert_Success sd_nvic_SetPriority(irqNo,realPrio);
+    __Assert_Success sd_nvic_ClearPendingIRQ(irqNo);
+    __Assert_Success sd_nvic_EnableIRQ(irqNo);
 #else
     NVIC_SetPriority(irqNo,realPrio);
     NVIC_ClearPendingIRQ(irqNo);
@@ -71,7 +74,7 @@ void enable_irq(UcIrqNo irqNo,UcIrqPriority prio)
 void disable_irq(UcIrqNo irqNo)
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
-    __Assert_Nrf_Success sd_nvic_DisableIRQ(irqNo);
+    __Assert_Success sd_nvic_DisableIRQ(irqNo);
 #else
     NVIC_DisableIRQ(irqNo);
 #endif
@@ -176,7 +179,7 @@ bool disable_appIrq()
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
     uint8_t nestedCriticalReqion = 0;
-    __Assert_Nrf_Success sd_nvic_critical_region_enter(&nestedCriticalReqion);
+    __Assert_Success sd_nvic_critical_region_enter(&nestedCriticalReqion);
     return nestedCriticalReqion;
 #elif __CORTEX_M >= 3 // CMSIS
     if ( is_irqLevelLower(UC_HIGH_PRIORITY_IRQ))
@@ -202,7 +205,7 @@ bool disable_appIrq()
 void enable_appIrq(bool nested)
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
-    __Assert_Nrf_Success sd_nvic_critical_region_exit(nested);
+    __Assert_Success sd_nvic_critical_region_exit(nested);
 #elif __CORTEX_M >= 3 // CMSIS
     if ( !nested ) set_irqLevel(UC_APP_PRIORITY_IRQ);
 #else
