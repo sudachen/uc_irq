@@ -102,11 +102,11 @@ void uc_irq$stopRTC1()
     NRF_RTC1->EVTENCLR = RTC_EVTENSET_TICK_Msk;
     NRF_RTC1->TASKS_STOP = 1;
     nrf_delay_us(47);
+
     NRF_RTC1->TASKS_CLEAR = 1;
     disable_irq(RTC1_IRQn);
     uc_irq$rtcIsStarted = false;
 }
-
 #endif
 
 #ifdef __stm32Fx_UC__
@@ -167,26 +167,23 @@ bool is_irqLevelLower(IrqPriority irqLevel)
 
 int set_irqRawLevel(int newIrqLevel)
 {
-    oldPrio = __get_BASEPRI();
+    uint32_t oldPrio = __get_BASEPRI();
     __set_BASEPRI(newIrqLevel<<4);
     return oldPrio>>4;
 }
 
 void set_irqLevel(IrqPriority irqLevel)
 {
-    uint32_t oldPrio;
-    uint32_t realPrio = uc_irq$prio(irqLevel) << 4;
-    oldPrio = __get_BASEPRI();
-    __set_BASEPRI(realPrio);
+    __set_BASEPRI(uc_irq$prio(irqLevel) << 4);
 }
 #endif
 
 int disable_appIrq()
 {
 #if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
-    uint8_t nestedCriticalReqion = 0;
-    __Assert_Success sd_nvic_critical_region_enter(&nestedCriticalReqion);
-    return nestedCriticalReqion;
+    uint8_t nestedCriticalRegion = 0;
+    __Assert_Success sd_nvic_critical_region_enter(&nestedCriticalRegion);
+    return nestedCriticalRegion;
 #elif __CORTEX_M >= 3 // CMSIS
     if ( is_irqLevelLower(HIGH_PRIORITY_IRQ))
     {
