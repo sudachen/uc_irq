@@ -48,8 +48,8 @@ void register_irqHandler(struct IrqHandler *irq, IrqHandler **irqList);
 void unregister_irqHandler(struct IrqHandler *irq, IrqHandler **irqList);
 void handle_irq(struct IrqHandler *irqList);
 
-extern IrqHandler *vIRQ_1ms; // virtual IRQ signalled every 1ms
-#define TIMED_IRQ vIRQ_1ms
+extern IrqHandler *IRQlist_1ms; // virtual IRQ signalled every 1ms
+#define TIMED_IRQ IRQlist_1ms
 
 void register_1msHandler(struct IrqHandler *irq);
 void unregister_1msHandler(struct IrqHandler *irq);

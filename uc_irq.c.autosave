@@ -34,7 +34,8 @@ void RTC1_IRQHandler(void)
 
 #endif
 
-__Forceinline int uc_irq$prio(IrqPriority prio)
+__Forceinline 
+int uc_irq$prio(IrqPriority prio)
 {
 #ifdef __nRF5x_UC__
     switch(prio) {
