@@ -53,15 +53,3 @@ extern IrqHandler *IRQlist_1ms; // virtual IRQ signalled every 1ms
 
 void register_1msHandler(struct IrqHandler *irq);
 void unregister_1msHandler(struct IrqHandler *irq);
-
-#if __CORTEX_M >= 3
-void set_irqLevel(IrqPriority irqLevel);
-#endif
-
-void enable_appIrq(int nested);
-int disable_appIrq(void); // return true if call is nested
-
-#define __Critical \
-    switch (0) for ( int uc_irq$nested; 0; enable_appIrq(uc_irq$nested) ) \
-        if(1) { case 0: uc_irq$nested = disable_appIrq(); goto C_LOCAL_ID(doIt); } \
-        else C_LOCAL_ID(doIt):

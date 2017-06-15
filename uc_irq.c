@@ -34,7 +34,8 @@ void RTC1_IRQHandler(void)
 
 #endif
 
-__Forceinline int uc_irq$prio(IrqPriority prio)
+__Forceinline
+int uc_irq$prio(IrqPriority prio)
 {
 #ifdef __nRF5x_UC__
     switch(prio) {
@@ -119,9 +120,12 @@ void on_sysTick1ms()
 
 void register_irqHandler(IrqHandler *irq, IrqHandler **irqList)
 {
-    if ( irq->next != NULL ) return;
-    irq->next = *irqList;
-    *irqList = irq;
+    __Critical
+    {
+        if ( irq->next != NULL ) return;
+        irq->next = *irqList;
+        *irqList = irq;
+    }
 }
 
 void unregister_irqHandler(IrqHandler *irq, IrqHandler **irqList)
@@ -129,13 +133,17 @@ void unregister_irqHandler(IrqHandler *irq, IrqHandler **irqList)
     IrqHandler **ptr = irqList;
     if ( irq->next == NULL ) return;
 
-    while ( *ptr != IRQ_LIST_NIL && *ptr != irq ) ptr = &(*ptr)->next;
-
-    if ( *ptr != IRQ_LIST_NIL )
+    __Critical
     {
-        *ptr = (*ptr)->next;
-        irq->next = 0;
+        while ( *ptr != IRQ_LIST_NIL && *ptr != irq ) ptr = &(*ptr)->next;
+
+        if ( *ptr != IRQ_LIST_NIL )
+        {
+            *ptr = (*ptr)->next;
+            irq->next = 0;
+        }
     }
+
 }
 
 void register_1msHandler(IrqHandler *irq)
@@ -153,64 +161,5 @@ void unregister_1msHandler(IrqHandler *irq)
 #ifdef __nRF5x_UC__
     if ( IRQlist_1ms == IRQ_LIST_NIL && uc_irq$RtcIsStarted )
         uc_irq$stopRTC1();
-#endif
-}
-
-#if __CORTEX_M >= 3 // CMSIS
-bool is_irqLevelLower(IrqPriority irqLevel)
-{
-    uint32_t oldPrio;
-    uint32_t realPrio = uc_irq$prio(irqLevel) << 4;
-    oldPrio = __get_BASEPRI();
-    return oldPrio < realPrio;
-}
-
-int set_irqRawLevel(int newIrqLevel)
-{
-    uint32_t oldPrio = __get_BASEPRI();
-    __set_BASEPRI(newIrqLevel<<4);
-    return oldPrio>>4;
-}
-
-void set_irqLevel(IrqPriority irqLevel)
-{
-    __set_BASEPRI(uc_irq$prio(irqLevel) << 4);
-}
-#endif
-
-int disable_appIrq()
-{
-#if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
-    uint8_t nestedCriticalRegion = 0;
-    __Assert_Success sd_nvic_critical_region_enter(&nestedCriticalRegion);
-    return nestedCriticalRegion;
-#elif __CORTEX_M >= 3 // CMSIS
-    if ( is_irqLevelLower(HIGH_PRIORITY_IRQ))
-    {
-        return set_irqRawLevel(uc_irq$prio(HIGH_PRIORITY_IRQ));
-    }
-    return 0;
-#else
-    uint32_t primask = __get_PRIMASK();
-    if ( primask )
-    {
-        return 1;
-    }
-    else
-    {
-        __disable_irq();
-        return 0;
-    }
-#endif
-}
-
-void enable_appIrq(int nested)
-{
-#if defined __nRF5x_UC__ && defined SOFTDEVICE_PRESENT
-    __Assert_Success sd_nvic_critical_region_exit(nested);
-#elif __CORTEX_M >= 3 // CMSIS
-    if ( nested ) set_irqRawLevel(nested);
-#else
-    if ( !netsed ) __enable_irq();
 #endif
 }
